@@ -7,12 +7,19 @@ import math
 import glob
 import subprocess
 from statistics import mean, stdev
+import argparse
 
-try:
-    from scipy.stats import t
-    HAVE_SCIPY = True
-except ImportError:
-    HAVE_SCIPY = False
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--save-images",
+    action="store_true",
+    help="Save generated output images."
+    default=False
+)
+
+args = parser.parse_args()
+
+SAVE_OUTPUT_IMAGES = SAVE_OUTPUT_IMAGES = args.save_images
 
 try:
     from PIL import Image
@@ -77,6 +84,8 @@ def confidence_interval(samples):
     tcrit = t.ppf(0.975, n - 1)
     return tcrit * s / math.sqrt(n)
 
+
+NULL_OUTPUT = os.devnull
 
 def run_once(image_path, output_path, mode, bits):
 
@@ -161,9 +170,13 @@ def main():
             # Warmup
             for warmup in range(WARMUP_RUNS):
 
-                warmup_out = os.path.join(
-                    OUTPUT_DIR,
-                    f"{base_name}_{mode}_warmup.png"
+                warmup_out = (
+                    os.path.join(
+                        OUTPUT_DIR,
+                        f"{base_name}_{mode}_warmup.png"
+                    )
+                    if SAVE_OUTPUT_IMAGES
+                    else NULL_OUTPUT
                 )
 
                 run_once(
@@ -178,9 +191,13 @@ def main():
 
             for run_idx in range(MEASURED_RUNS):
 
-                out_file = os.path.join(
-                    OUTPUT_DIR,
-                    f"{base_name}_{mode}_run{run_idx}.png"
+                out_file = (
+                    os.path.join(
+                        OUTPUT_DIR,
+                        f"{base_name}_{mode}_run{run_idx}.png"
+                    )
+                    if SAVE_OUTPUT_IMAGES
+                    else NULL_OUTPUT
                 )
 
                 runtime_ms = run_once(
