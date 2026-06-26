@@ -32,7 +32,7 @@ except ImportError:
 # Configuration
 # ============================================================
 
-EXECUTABLE = "./dither"
+EXECUTABLE = "./dither_gpu"
 
 INPUT_DIR = "images"
 
