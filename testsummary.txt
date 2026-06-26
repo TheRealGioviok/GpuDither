@@ -1,0 +1,142 @@
+======================================================================
+Image: dwayne.png
+Resolution: 5120x2880
+Pixels: 14,745,600
+Bucket: large
+======================================================================
+[1/48] threshold
+    mean=0.1851 ms ± 0.0051 ms (95% CI)
+[2/48] random
+    mean=0.1835 ms ± 0.0019 ms (95% CI)
+[3/48] bayer2
+    mean=0.1845 ms ± 0.0055 ms (95% CI)
+[4/48] bayer4
+    mean=0.1864 ms ± 0.0077 ms (95% CI)
+[5/48] bayer8
+    mean=0.1843 ms ± 0.0074 ms (95% CI)
+[6/48] floyd_steinberg_safe
+    mean=419.4506 ms ± 6.8011 ms (95% CI)
+[7/48] floyd_steinberg_vec
+    mean=113.5239 ms ± 2.8602 ms (95% CI)
+[8/48] floyd_steinberg_vec2
+    mean=111.1306 ms ± 2.4075 ms (95% CI)
+
+======================================================================
+Image: golden_retriever.png
+Resolution: 4096x4096
+Pixels: 16,777,216
+Bucket: large
+======================================================================
+[9/48] threshold
+    mean=0.2144 ms ± 0.0081 ms (95% CI)
+[10/48] random
+    mean=0.2060 ms ± 0.0039 ms (95% CI)
+[11/48] bayer2
+    mean=0.2117 ms ± 0.0128 ms (95% CI)
+[12/48] bayer4
+    mean=0.2046 ms ± 0.0022 ms (95% CI)
+[13/48] bayer8
+    mean=0.2036 ms ± 0.0029 ms (95% CI)
+[14/48] floyd_steinberg_safe
+    mean=483.0412 ms ± 1.6398 ms (95% CI)
+[15/48] floyd_steinberg_vec
+    mean=140.5710 ms ± 0.8004 ms (95% CI)
+[16/48] floyd_steinberg_vec2
+    mean=137.7018 ms ± 1.0882 ms (95% CI)
+
+======================================================================
+Image: landscape.png
+Resolution: 2560x1440
+Pixels: 3,686,400
+Bucket: medium
+======================================================================
+[17/48] threshold
+    mean=0.0535 ms ± 0.0017 ms (95% CI)
+[18/48] random
+    mean=0.0525 ms ± 0.0006 ms (95% CI)
+[19/48] bayer2
+    mean=0.0526 ms ± 0.0029 ms (95% CI)
+[20/48] bayer4
+    mean=0.0535 ms ± 0.0027 ms (95% CI)
+[21/48] bayer8
+    mean=0.0511 ms ± 0.0017 ms (95% CI)
+[22/48] floyd_steinberg_safe
+    mean=95.9648 ms ± 0.2003 ms (95% CI)
+[23/48] floyd_steinberg_vec
+    mean=28.9694 ms ± 0.1189 ms (95% CI)
+[24/48] floyd_steinberg_vec2
+    mean=28.3569 ms ± 0.0045 ms (95% CI)
+
+======================================================================
+Image: lena.png
+Resolution: 512x512
+Pixels: 262,144
+Bucket: medium
+======================================================================
+[25/48] threshold
+    mean=0.0066 ms ± 0.0004 ms (95% CI)
+[26/48] random
+    mean=0.0066 ms ± 0.0005 ms (95% CI)
+[27/48] bayer2
+    mean=0.0070 ms ± 0.0006 ms (95% CI)
+[28/48] bayer4
+    mean=0.0070 ms ± 0.0006 ms (95% CI)
+[29/48] bayer8
+    mean=0.0069 ms ± 0.0004 ms (95% CI)
+[30/48] floyd_steinberg_safe
+    mean=7.5068 ms ± 0.1623 ms (95% CI)
+[31/48] floyd_steinberg_vec
+    mean=2.8971 ms ± 0.0715 ms (95% CI)
+[32/48] floyd_steinberg_vec2
+    mean=2.9451 ms ± 0.0107 ms (95% CI)
+
+======================================================================
+Image: mars.png
+Resolution: 6787x6787
+Pixels: 46,063,369
+Bucket: large
+======================================================================
+[33/48] threshold
+    mean=0.5966 ms ± 0.0008 ms (95% CI)
+[34/48] random
+    mean=0.5779 ms ± 0.0012 ms (95% CI)
+[35/48] bayer2
+    mean=0.5779 ms ± 0.0005 ms (95% CI)
+[36/48] bayer4
+    mean=0.5773 ms ± 0.0005 ms (95% CI)
+[37/48] bayer8
+    mean=0.5785 ms ± 0.0005 ms (95% CI)
+[38/48] floyd_steinberg_safe
+    mean=1541.1634 ms ± 3.8206 ms (95% CI)
+[39/48] floyd_steinberg_vec
+    mean=438.7384 ms ± 2.3419 ms (95% CI)
+[40/48] floyd_steinberg_vec2
+    mean=425.0053 ms ± 1.6781 ms (95% CI)
+
+======================================================================
+Image: panorama.png
+Resolution: 1920x1200
+Pixels: 2,304,000
+Bucket: medium
+======================================================================
+[41/48] threshold
+    mean=0.0381 ms ± 0.0006 ms (95% CI)
+[42/48] random
+    mean=0.0372 ms ± 0.0011 ms (95% CI)
+[43/48] bayer2
+    mean=0.0369 ms ± 0.0006 ms (95% CI)
+[44/48] bayer4
+    mean=0.0362 ms ± 0.0015 ms (95% CI)
+[45/48] bayer8
+    mean=0.0359 ms ± 0.0015 ms (95% CI)
+[46/48] floyd_steinberg_safe
+    mean=62.6390 ms ± 0.0655 ms (95% CI)
+[47/48] floyd_steinberg_vec
+    mean=18.3281 ms ± 0.0236 ms (95% CI)
+[48/48] floyd_steinberg_vec2
+    mean=17.9461 ms ± 0.0136 ms (95% CI)
+
+Benchmark complete.
+Raw runs:      benchmark_raw_runs.csv
+Per-image:     benchmark_summary.csv
+Per-mode:      benchmark_mode_summary.csv
