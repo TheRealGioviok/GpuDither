@@ -8,6 +8,7 @@ import glob
 import subprocess
 from statistics import mean, stdev
 import argparse
+from scipy.stats import t
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
