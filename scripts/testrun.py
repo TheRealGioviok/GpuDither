@@ -13,7 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--save-images",
     action="store_true",
-    help="Save generated output images."
+    help="Save generated output images.",
     default=False
 )
 
