@@ -1,0 +1,65 @@
+inline float4 quantize4(float4 x, float4 step)
+{
+    float4 q = round(x / step) * step;
+    return clamp(q, (float4)(0.0f), (float4)(255.0f));
+}
+
+__kernel void dither(
+    __global float4 *data,       // Image data
+    __global const float *diff,  // Error weights
+    int m,                       // Image Width in pixels
+    int n,                       // Image Height in pixels
+    int w,                       // Filter width
+    int size_dw,                 // Filter size
+    float step)                  // Step
+{
+    int lid = get_local_id(0);
+    int N   = get_local_size(0);
+
+    int half_w = (w+1)/2 +1;
+    int delay = half_w + 1;
+
+    int y = lid;
+    int x = -y * delay;
+
+    float4 step4 = (float4)(step);
+
+    while (true){
+        int index;
+        float4 new_value;
+        float4 error;
+
+        if (x >= 0 && y < n){
+            index = y * m + x;
+            new_value = quantize4(data[index], step4);
+            error = data[index] - new_value;
+            data[index] = new_value;
+        }
+
+        int dx = 1;
+        int dy = 0;
+        for (int d = 0; d < size_dw; ++d){
+            if (x >= 0 && y < n && x + dx >= 0
+                && y + dy >= 0
+                && x + dx < m
+                && y + dy < n) {
+                
+                int dindex = index + dx + dy * m;
+                data[dindex] = data[dindex] + error * diff[d];  
+            }
+            if (++dx > w / 2) {
+                dx = -w / 2;
+                ++dy;
+            }
+        }
+
+        ++x;
+        if (x >= m) {
+            x = 0;
+            y += N;
+            if (y >= n){
+                return;
+            }
+        }
+    }
+}

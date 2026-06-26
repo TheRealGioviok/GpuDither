@@ -1,0 +1,61 @@
+inline float4 quantize4(float4 x, float4 step)
+{
+    float4 q = round(x / step) * step;
+    return clamp(q, (float4)(0.0f), (float4)(255.0f));
+}
+
+__kernel void dither(
+    __global float4 *data,
+    int m,
+    int n,
+    float step)
+{
+    int lid = get_local_id(0);
+    int N   = get_local_size(0);
+
+    int delay = 3;
+    int I = m + delay * (n - 1);
+
+    float4 step4 = (float4)(step);
+
+    for (int i = 0; i < I; ++i)
+    {
+        for (int y = lid; y < n; y += N)
+        {
+            int x = i - delay * y;
+
+            if (x >= 0 && x < m)
+            {
+                int idx = y * m + x;
+
+                float4 oldv = data[idx];
+                float4 newv = quantize4(oldv, step4);
+                float4 err  = oldv - newv;
+
+                data[idx] = newv;
+
+                if (x + 1 < m)
+                {
+                    data[idx + 1] += err * (float4)(7.0f / 16.0f);
+                }             
+
+                if (y + 1 < n)
+                {
+                    int ndix = idx + m;
+                    if (x - 1 >= 0){
+                        data[ndix - 1] += err * (float4)(3.0f / 16.0f);
+                    }
+
+                    data[ndix] += err * (float4)(5.0f / 16.0f);
+
+                    if (x + 1 < m)
+                    {
+                        data[ndix + 1] += err * (float4)(1.0f / 16.0f);
+                    }
+                }                
+            }
+            barrier(CLK_GLOBAL_MEM_FENCE);
+        }
+
+    }
+}

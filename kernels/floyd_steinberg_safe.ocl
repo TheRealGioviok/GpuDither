@@ -1,0 +1,71 @@
+inline float quantize(float x, float step)
+{
+    float q = round(x / step) * step;
+    return clamp(q, 0.0f, 255.0f);
+}
+
+__kernel void dither(
+    __global float *data,
+    __global const float *filter, // Filter weights
+    int m,            // Image width
+    int n,            // Image height
+    int w,            // Filter width
+    int size_dw,      // Filter size
+    float step,       // Step size
+    int channels)     // Channel count
+{
+    int local_id = get_local_id(0);
+    int N   = get_local_size(0);
+
+    int delay = (w+1)/2 + 1;
+
+    int I = m + delay * (n - 1);
+
+    int half_w = w / 2;
+
+    // Wavefront outer loop
+    for (int i = 0; i < I; ++i)
+    {
+        // Stride over rows
+        for (int y = local_id; y < n; y += N)
+        {
+            int x = i - delay * y;
+            if (x >= 0 && x < m)
+            {
+                int idx = (y * m + x) * channels;
+
+                for (int c = 0; c < channels; ++c)
+                {
+                    float oldv = data[idx + c];
+                    float newv = quantize(oldv, step);
+                    float err  = oldv - newv;
+
+                    data[idx + c] = newv;
+
+                    int dx = 1;
+                    int dy = 0;
+
+                    for (int d = 0; d < size_dw; ++d)
+                    {
+                        int nx = x + dx;
+                        int ny = y + dy;
+
+                        if (nx >= 0 && nx < m && ny >= 0 && ny < n)
+                        {
+                            int nidx = (ny * m + nx) * channels + c;
+                            data[nidx] += err * filter[d];
+                        }
+
+                        if (++dx > half_w)
+                        {
+                            dx = -half_w;
+                            dy++;
+                        }
+                    }
+                }
+            }
+        }
+
+        barrier(CLK_GLOBAL_MEM_FENCE);
+    }
+}

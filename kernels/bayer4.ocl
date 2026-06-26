@@ -1,0 +1,41 @@
+constant int bayer4[16] =
+{
+     0, 8, 2,10,
+    12, 4,14, 6,
+     3,11, 1, 9,
+    15, 7,13, 5
+};
+
+inline uchar quant(
+    uchar v,
+    int bits,
+    int t)
+{
+    int levels = (1 << bits) - 1;
+    float x = v / 255.0f;
+    x += (t - 7.5f) / (16.0f * levels);
+    x = clamp(x, 0.0f, 1.0f);
+
+    return round(x * levels) * (255.0f / levels);
+}
+
+__kernel void dither(
+    __global const uchar4 *src,
+    __global uchar4 *dst,
+    int width,
+    int bits)
+{
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+
+    int idx = y * width + x;
+    int t = bayer4[(y & 3) * 4 + (x & 3)];
+    uchar4 p = src[idx];
+
+    dst[idx] = (uchar4)(
+        quant(p.x, bits, t),
+        quant(p.y, bits, t),
+        quant(p.z, bits, t),
+        255
+    );
+}
