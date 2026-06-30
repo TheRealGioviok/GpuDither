@@ -256,8 +256,10 @@ int main(int argc, char **argv)
     double ms = (t1.tv_sec - t0.tv_sec) * 1e3 + (t1.tv_nsec - t0.tv_nsec) * 1e-6;
     printf("kernel time %.3f ms\n", ms);
 
-    write_png(out_file, img.width, img.height, out);
-    printf("wrote %s\n", out_file);
+    if (!gen_side){
+        write_png(out_file, img.width, img.height, out);
+        printf("wrote %s\n", out_file);
+    }
 
     free(img.pixels);
     free(out);
