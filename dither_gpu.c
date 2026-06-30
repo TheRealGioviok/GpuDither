@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
     if (argc - argi < 3) {
         fprintf(stderr, "usage:\n%s [--gen N] in.png out.png mode bits\n", argv[0]);
-        fprintf(stderr, "\t\t--gen N   use a random N×N RGBA image instead of reading in.png\n");
+        fprintf(stderr, "\t\t--gen N   use a random NxN RGBA image instead of reading in.png\n");
         exit(EXIT_FAILURE);
     }
 
@@ -107,8 +107,8 @@ int main(int argc, char **argv)
     cl_context context      = create_context(platform, device);
     cl_command_queue queue  = create_queue(context, device);
 
-    // Determine execution path based on algorithm characteristics
     bool is_floyd = (!strcmp(mode, "floyd_steinberg_safe") || 
+    !strcmp(mode, "floyd_steinberg_safe_bruno") || 
                      !strcmp(mode, "floyd_steinberg_vec") || 
                      !strcmp(mode, "floyd_steinberg_vec2") || 
                     !strcmp(mode, "floyd_steinberg_vec3"));
@@ -119,8 +119,9 @@ int main(int argc, char **argv)
         run_parallel_dither(kernel_file, &img, bits, out, context, device, queue);
     }
 
-    write_png(out_file, img.width, img.height, out);
-
+    if (!gen_side){
+        write_png(out_file, img.width, img.height, out);
+    }
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
     free(img.pixels);
@@ -152,28 +153,15 @@ static void run_floyd_steinberg(const char *kernel_file, const char *mode, const
     cl_kernel kernel   = clCreateKernel(program, "dither", &err);
     ocl_check(err, "create kernel");
     
-    // Wavefront launch sizing boundaries
-    int half_w = FS_W / 2;
-    int block_size = img->width / (half_w + 1);
-    if (block_size > img->height) block_size = img->height;
-    if (block_size < 1)          block_size = 1;
-
-    printf("Blocksize: %d\n", block_size);
+    int block_size;
 
     size_t max_wgs;
-    clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(max_wgs), &max_wgs, NULL);
-    if ((size_t)block_size > max_wgs) {
-        block_size = (int)max_wgs;
-    }
-
-    size_t lws = (size_t)block_size;
-    size_t gws = lws;
-
+    
     int w_arg       = FS_W;
     int size_dw_arg = FS_SIZE_DW;
     int ch_arg      = CHANNEL_COUNT;
 
-    if (!strcmp(mode, "floyd_steinberg_safe")) {
+    if (!strcmp(mode, "floyd_steinberg_safe") || !strcmp(mode, "floyd_steinberg_safe_bruno")) {
         err  = clSetKernelArg(kernel, 0, sizeof(data_buf),   &data_buf);
         err |= clSetKernelArg(kernel, 1, sizeof(filter_buf), &filter_buf);
         err |= clSetKernelArg(kernel, 2, sizeof(int),        &img->width);
@@ -182,6 +170,8 @@ static void run_floyd_steinberg(const char *kernel_file, const char *mode, const
         err |= clSetKernelArg(kernel, 5, sizeof(int),        &size_dw_arg);
         err |= clSetKernelArg(kernel, 6, sizeof(float),      &step);
         err |= clSetKernelArg(kernel, 7, sizeof(int),    &ch_arg);
+
+        block_size = (img->width + 2) / 3;
     }
     else if (!strcmp(mode, "floyd_steinberg_vec")) {
         err  = clSetKernelArg(kernel, 0, sizeof(data_buf),   &data_buf);
@@ -191,13 +181,28 @@ static void run_floyd_steinberg(const char *kernel_file, const char *mode, const
         err |= clSetKernelArg(kernel, 4, sizeof(int),        &w_arg);
         err |= clSetKernelArg(kernel, 5, sizeof(int),        &size_dw_arg);
         err |= clSetKernelArg(kernel, 6, sizeof(float),      &step);
+
+        block_size = (img->width + 2) / 3;
     }
-    else {
+    else { // vec 2 and 3 have same args
         err  = clSetKernelArg(kernel, 0, sizeof(data_buf),   &data_buf);
         err |= clSetKernelArg(kernel, 1, sizeof(int),        &img->width);
         err |= clSetKernelArg(kernel, 2, sizeof(int),        &img->height);
         err |= clSetKernelArg(kernel, 3, sizeof(float),      &step);
+
+        block_size = (img->width + 1) / 2;
     }
+
+    if (block_size < 1) block_size = 1;
+    clGetKernelWorkGroupInfo(kernel, device, CL_KERNEL_WORK_GROUP_SIZE,
+                            sizeof(max_wgs), &max_wgs, NULL);
+    if ((size_t)block_size > max_wgs) {
+        block_size = (int)max_wgs;
+    }
+    printf("Blocksize: %d\n", block_size);
+
+    size_t lws = (size_t)block_size;
+    size_t gws = lws;
 
     ocl_check(err, "set kernel args");
 
@@ -269,8 +274,10 @@ static const char *kernel_from_mode(const char *mode)
     if (!strcmp(mode, "bayer4"))                     return "kernels/bayer4.ocl";
     if (!strcmp(mode, "bayer8"))                     return "kernels/bayer8.ocl";
     if (!strcmp(mode, "floyd_steinberg_safe"))       return "kernels/floyd_steinberg_safe.ocl";
+    if (!strcmp(mode, "floyd_steinberg_safe_bruno"))       return "kernels/floyd_steinberg_safe_bruno.ocl";
     if (!strcmp(mode, "floyd_steinberg_vec")) return "kernels/floyd_steinberg_vec.ocl";
     if (!strcmp(mode, "floyd_steinberg_vec2"))   return "kernels/floyd_steinberg_vec2.ocl";
+    if (!strcmp(mode, "floyd_steinberg_vec3"))   return "kernels/floyd_steinberg_vec3.ocl";
 
     fprintf(stderr, "unknown mode: %s\n", mode);
     exit(EXIT_FAILURE);
