@@ -22,17 +22,6 @@ args = parser.parse_args()
 
 SAVE_OUTPUT_IMAGES = SAVE_OUTPUT_IMAGES = args.save_images
 
-try:
-    from PIL import Image
-except ImportError:
-    print("Please install Pillow:")
-    print("    pip install pillow")
-    raise
-
-# ============================================================
-# Configuration
-# ============================================================
-
 EXECUTABLE = "./dither_gpu"
 
 INPUT_DIR = "images"
