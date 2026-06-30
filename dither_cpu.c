@@ -14,6 +14,16 @@ typedef struct {
     unsigned char *pixels; 
 } image_t;
 
+static image_t generate_random_image(int side)
+{
+    srand((unsigned)time(NULL));
+    unsigned char *pixels = malloc(side * side * CH);
+    if (!pixels) { perror("random image alloc"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < side * side * CH; ++i)
+        pixels[i] = (unsigned char)(rand() & 0xFF);
+    return (image_t){ side, side, pixels };
+}
+
 static image_t read_png(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
@@ -185,17 +195,34 @@ static void dither_floyd_steinberg(const image_t *src, unsigned char *dst,
 
 int main(int argc, char **argv)
 {
-    if (argc < 5) {
-        fprintf(stderr, "usage: %s in.png out.png mode bits\n", argv[0]);
+    int gen_side = 0;
+    int argi = 1;
+
+    if (argc > 2 && !strcmp(argv[argi], "--gen")) {
+        gen_side = atoi(argv[argi + 1]);
+        if (gen_side < 1) {
+            fprintf(stderr, "Error: --gen side must be >= 1\n");
+            return EXIT_FAILURE;
+        }
+        argi += 2;
+    }
+
+    if (argc - argi < 3) {
+        fprintf(stderr, "usage: %s [--gen N] in.png out.png mode bits\n", argv[0]);
+        fprintf(stderr, "\t\t--gen N use a random N×N image instead of reading in.png\n");
         fprintf(stderr, "modes: threshold random bayer2 bayer4 bayer8 floyd_steinberg\n");
         return EXIT_FAILURE;
     }
 
-    const char *in_file  = argv[1];
-    const char *out_file = argv[2];
-    const char *mode     = argv[3];
-    int         bits     = atoi(argv[4]);
+    const char *in_file  = gen_side ? NULL : argv[argi++];
+    const char *out_file = argv[argi++];
+    const char *mode     = argv[argi++];
+    int         bits     = (argi < argc) ? atoi(argv[argi]) : 0;
 
+    if (!gen_side && !in_file) {
+        fprintf(stderr, "Error: no input file and --gen not specified\n");
+        return EXIT_FAILURE;
+    }
     if (bits < 1 || bits > 8) {
         fprintf(stderr, "Error: bits must be between 1 and 8\n");
         return EXIT_FAILURE;
@@ -203,7 +230,10 @@ int main(int argc, char **argv)
 
     float step = 255.0f / (float)((1 << bits) - 1);
 
-    image_t img = read_png(in_file);
+    image_t img = gen_side ? generate_random_image(gen_side)
+                           : read_png(in_file);
+    if (gen_side)
+        printf("generated random %dx%d image\n", img.width, img.height);
     unsigned char *out = malloc(img.width * img.height * CH);
     if (!out) { perror("output alloc"); free(img.pixels); return EXIT_FAILURE; }
 
