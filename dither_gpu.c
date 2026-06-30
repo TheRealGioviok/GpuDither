@@ -31,7 +31,7 @@ typedef struct {
     unsigned char *pixels;
 } image_t;
 
-// Forward Declarations
+// Forward decls
 static const char *kernel_from_mode(const char *mode);
 static image_t read_png(const char *filename);
 static void write_png(const char *filename, int width, int height, unsigned char *pixels);
@@ -41,18 +41,52 @@ static void float_to_img(const float *f, unsigned char *dst, size_t count);
 static void run_floyd_steinberg(const char *kernel_file, const char *mode, const image_t *img, int bits, unsigned char *out, cl_context context, cl_device_id device, cl_command_queue queue);
 static void run_parallel_dither(const char *kernel_file, const image_t *img, int bits, unsigned char *out, cl_context context, cl_device_id device, cl_command_queue queue);
 
+static image_t generate_random_image(int side)
+{
+    srand((unsigned)47); // 47 my beloved
+    unsigned char *pixels = malloc(side * side * CHANNEL_COUNT);
+    if (!pixels) { perror("random image alloc"); exit(EXIT_FAILURE); }
+    for (int i = 0; i < side * side; ++i) {
+        pixels[i * CHANNEL_COUNT + 0] = (unsigned char)(rand() & 0xFF); /* R */
+        pixels[i * CHANNEL_COUNT + 1] = (unsigned char)(rand() & 0xFF); /* G */
+        pixels[i * CHANNEL_COUNT + 2] = (unsigned char)(rand() & 0xFF); /* B */
+        pixels[i * CHANNEL_COUNT + 3] = 0xFF;                           /* A */
+    }
+    return (image_t){ side, side, pixels };
+}
+
 int main(int argc, char **argv)
 {
-    if (argc < 5) {
-        fprintf(stderr, "usage:\n%s in.png out.png mode bits\n", argv[0]);
+    int gen_side = 0;
+    int argi = 1;
+
+    if (argc > 2 && !strcmp(argv[argi], "--gen")) {
+        gen_side = atoi(argv[argi + 1]);
+        if (gen_side < 1) {
+            fprintf(stderr, "Error: --gen side must be >= 1\n");
+            exit(EXIT_FAILURE);
+        }
+        argi += 2;
+    }
+
+    if (argc - argi < 3) {
+        fprintf(stderr, "usage:\n%s [--gen N] in.png out.png mode bits\n", argv[0]);
+        fprintf(stderr, "\t\t--gen N   use a random N×N RGBA image instead of reading in.png\n");
         exit(EXIT_FAILURE);
     }
 
-    const char *mode = argv[3];
-    const char *kernel_file = kernel_from_mode(mode);
-    image_t img = read_png(argv[1]);
+    const char *in_file  = gen_side ? NULL : argv[argi++];
+    const char *out_file = argv[argi++];
+    const char *mode     = argv[argi++];
+    int         bits     = (argi < argc) ? atoi(argv[argi]) : 0;
 
-    int bits = atoi(argv[4]);
+    const char *kernel_file = kernel_from_mode(mode);
+
+    image_t img = gen_side ? generate_random_image(gen_side)
+                           : read_png(in_file);
+    if (gen_side)
+        printf("generated random %dx%d RGBA image\n", img.width, img.height);
+
     if (bits < 1 || bits > 8) {
         fprintf(stderr, "Error: bits must be between 1 and 8\n");
         free(img.pixels);
@@ -85,7 +119,7 @@ int main(int argc, char **argv)
         run_parallel_dither(kernel_file, &img, bits, out, context, device, queue);
     }
 
-    write_png(argv[2], img.width, img.height, out);
+    write_png(out_file, img.width, img.height, out);
 
     clReleaseCommandQueue(queue);
     clReleaseContext(context);
